@@ -1,0 +1,18 @@
+Bundled fonts — SIL Open Font License 1.1
+==========================================
+
+IBM Plex Sans, IBM Plex Mono
+  Copyright © 2017 IBM Corp. All rights reserved.
+  https://github.com/IBM/plex
+
+Unbounded
+  Copyright © 2022 The Unbounded Project Authors
+  https://github.com/w3bi/Unbounded (via Google Fonts)
+
+All fonts in this directory are licensed under the SIL Open Font License,
+Version 1.1 (OFL-1.1): https://openfontlicense.org/open-font-license-official-text/
+
+They are bundled unmodified (static instances as served by the Google Fonts
+API) solely so the press-1 popup can render its brand typography via a
+process-private font load (AddFontResourceEx FR_PRIVATE). Nothing is
+installed system-wide.
