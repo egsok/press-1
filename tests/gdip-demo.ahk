@@ -1,0 +1,65 @@
+; GDI+ renderer VISUAL demo (BACKLOG 11). Shows a 3-card stack with the real
+; renderer for ~20 s so the design can be eyeballed / screenshotted, then exits.
+; Auto-targets a 100%-scale monitor if present (to check physical coordinates),
+; else the primary. Suspends this process's hotkeys + hides its tray icon so it never
+; clashes with a running daily-driver press-1.
+; Run: AutoHotkey64.exe tests\gdip-demo.ahk   (note chosen monitor in gdip-demo.txt)
+#NoTrayIcon
+#Include %A_ScriptDir%\..\press-1.ahk
+
+Suspend True                    ; this demo's hotkeys must not fight the live tool
+SetTimer(AutoShowCheck, 0)
+
+DirCreate(A_Temp "\press-1-tests")
+OUT := A_Temp "\press-1-tests\gdip-demo.txt"
+try FileDelete(OUT)
+
+if !PromptPopup.EnsureGdip() {
+    FileAppend("GDI+ failed to start`n", OUT)
+    ExitApp(1)
+}
+
+; Prefer a 100%-scale monitor to exercise side-screen physical coordinates;
+; fall back to Windows primary. Override persisted user choices for this demo only.
+targetDisplay := ""
+for display in P1_DISPLAY_CATALOG
+    if display.dpi = 96 {
+        targetDisplay := display
+        break
+    }
+if !targetDisplay
+    for display in P1_DISPLAY_CATALOG
+        if display.primary {
+            targetDisplay := display
+            break
+        }
+P1_POPUP_DISPLAY_PREFS := [{id:targetDisplay.id, label:targetDisplay.name}]
+wl := targetDisplay.workLeft, wt := targetDisplay.workTop
+wr := targetDisplay.workRight, wb := targetDisplay.workBottom
+sc := P1_PopupScale(targetDisplay.dpi, wr - wl)
+FileAppend("monitor=" targetDisplay.index "/" MonitorGetCount() " workarea=" (wr-wl) "x" (wb-wt)
+    . " dpi=" targetDisplay.dpi " sc=" Round(sc, 3) "`n", OUT)
+
+; oldest = index 1 = top of stack = active ring by default. Long command → 2-line wrap.
+p1 := { project_name:"my-api-server", tool_name:"Bash",
+        tool_input_short:"docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --scale worker=4",
+        kind:"permission", options:["Allow","Always allow","Deny"], host:"windows-terminal",
+        prompt_id:"demo-1", terminal_index:-1, detected_at:1718592000000 }
+; short command → single line (height contrast against the 2-line cards)
+p2 := { project_name:"web-frontend", tool_name:"Edit", tool_input_short:"vite.config.ts",
+        kind:"permission", options:["Allow","Deny"], host:"vscode-extension",
+        prompt_id:"demo-2", terminal_index:-1, detected_at:1718592001000 }
+; newest = bottom of stack = the v8 needs-user attention card. Focus-only:
+; press-1 surfaces the blocker but never guesses or types the answer.
+p3 := { project_name:"release-dashboard", tool_name:"",
+        tool_input_short:"Deployment is ready. Continue with the production rollout?",
+        kind:"attention", options:[], host:"vscode-terminal", agent:"codex",
+        editor_exe:"Code.exe", prompt_id:"demo-3", terminal_index:-1,
+        detected_at:1718592002000 }
+
+PromptPopup.Show([p1, p2, p3])
+SetTimer(PromptPopup._refreshFn, 0)    ; freeze reconcile so the demo cards persist
+
+Sleep 20000
+PromptPopup.Hide()
+ExitApp(0)
